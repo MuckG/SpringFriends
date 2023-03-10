@@ -3,8 +3,11 @@ package com.wiredbrain.friends.controller;
 import com.wiredbrain.friends.model.Friend;
 import com.wiredbrain.friends.service.FriendService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.xml.bind.ValidationException;
 import java.util.Optional;
 
 @RestController
@@ -14,9 +17,14 @@ public class FriendController {
     FriendService friendService;
 
     @PostMapping("/friend")
-    Friend create(@RequestBody Friend friend) {
+    Friend create(@RequestBody Friend friend) throws ValidationException {
         System.out.println("Creating Friend: " + friend.getFirstName());
-        return friendService.save(friend);
+        if (friend.getId() == 0 && friend.getFirstName() != null
+                && friend.getLastName() != null) {
+            return friendService.save(friend);
+        } else {
+            throw new ValidationException("Friend cannot be created");
+        }
     }
 
     @GetMapping("/friend")
@@ -26,9 +34,13 @@ public class FriendController {
     }
 
     @PutMapping("/friend")
-    Friend update(@RequestBody Friend friend) {
+    ResponseEntity<Friend> update(@RequestBody Friend friend) {
         System.out.println("Updating Friend: " + friend.getFirstName());
-        return friendService.save(friend);
+        if (friendService.findById(friend.getId()).isPresent()) {
+            return new ResponseEntity(friendService.save(friend), HttpStatus.OK);
+        } else {
+            return new ResponseEntity(friend, HttpStatus.BAD_REQUEST);
+        }
     }
 
     @DeleteMapping("/friend/{id}")
